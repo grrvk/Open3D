@@ -1,3 +1,6 @@
+import copy
+import random
+
 import cv2
 import numpy as np
 import open3d as o3d
@@ -6,13 +9,9 @@ import open3d.visualization as vis
 from map import Map, MapObject
 
 
-# DETAILS TAKE NOT ALL THE SQUARE BECAUSE SCALING IS DONE BY BOUNDING BOX
-
-
 class GeneralObject:
     def __init__(self, ply_filepath, index='o'):
         self._mesh = None
-        self._material = None
         self.index = index
         self.ply_filepath = ply_filepath
 
@@ -26,9 +25,6 @@ class GeneralObject:
 
     def get_mesh(self):
         return self._mesh
-
-    def get_material(self):
-        return self._material
 
     def get_index(self):
         return self.index
@@ -77,21 +73,74 @@ class GeneralObject:
 class Board(GeneralObject):
     def __init__(self, ply_filepath, size):
         super().__init__(ply_filepath=ply_filepath)
-        self.board_matrix = None
+        self.board_matrix: np.ndarray = None
         self.size = size
 
         self.uniform = None
         self.center = None
 
-    def random_fill(self):
-        values = [MapObject('o'), MapObject('L', (0, -np.pi / 2, 0))]
-        probabilities = [0.95, 0.05]
+    def random_fill(self, config_data, big_shapes, empty_rate):
 
-        self.board_matrix = np.random.choice(values, size=self.size, p=probabilities)
+        labels = [MapObject('o')]
+        united_big_shapes = copy.deepcopy(big_shapes)
+        united_big_shapes.extend(['B'])
+        labels.extend([MapObject(data['idx']) for data in config_data if data['idx'] not in united_big_shapes])
 
-    def map_fill(self):
+        rotations = [0, -np.pi / 2, np.pi, np.pi / 2]
+
+        probabilities = [empty_rate]
+        probabilities.extend([(1-empty_rate)/(len(labels)-1)] * (len(labels)-1))
+
+        self.board_matrix = np.random.choice(labels, size=self.size, p=probabilities)
+
+        it = np.nditer(self.board_matrix, flags=['multi_index', "refs_ok"])
+        while not it.finished:
+            if it[0].item().detail_type != 'o':
+                chance = random.random()
+                if chance < .5:
+                    random_rotation = random.choice(rotations)
+                    it[0].item().rotation = (0, random_rotation, 0)
+            is_not_finished = it.iternext()
+
+        big_shapes_copy = copy.deepcopy(big_shapes)
+        count = random.randint(0, len(big_shapes)-1)
+        print(f'Big figures count: {count}')
+
+        for _ in range(count):
+            random_big_shape = random.choice(big_shapes_copy)
+            big_shapes_copy.remove(random_big_shape)
+            if random_big_shape == 'CL':
+                i = np.random.randint(2, self.size[0]-1) # row of 14
+                j = np.random.randint(1, self.size[1]-1) # column of 17
+
+                self.board_matrix[i][j] = MapObject('CL')
+                self.free_surroundings(i, j, x_shift=1, up_shift=0, down_shift=2)
+            else:
+                i = np.random.randint(1, self.size[0] - 1)  # row of 14
+                j = np.random.randint(1, self.size[1] - 1)  # column of 17
+
+                self.board_matrix[i][j] = MapObject(random_big_shape)
+                self.free_surroundings(i, j, x_shift=1, up_shift=0, down_shift=1)
+
+        for row in self.board_matrix:
+            print(" ".join([e.detail_type for e in row]))
+
+    def free_surroundings(self, i, j, x_shift, up_shift=0, down_shift=0):
+        radius = [j - x_shift, j, j + x_shift]
+        for pos_x in radius:
+            if up_shift != 0:
+                for k in range(1, up_shift+1):
+                    self.board_matrix[i+k][pos_x] = MapObject('o')
+            if down_shift != 0:
+                for k in range(1, down_shift+1):
+                    self.board_matrix[i-k][pos_x] = MapObject('o')
+
+        self.board_matrix[i][j - x_shift] = MapObject('o')
+        self.board_matrix[i][j + x_shift] = MapObject('o')
+
+    def map_fill(self, num):
         map = Map()
-        self.board_matrix = map.create_plane()
+        self.board_matrix = map.create_plane(num)
 
     def uniformBlockSize(self):
         width, height, depth = self.get_size_params()

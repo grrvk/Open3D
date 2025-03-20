@@ -130,6 +130,7 @@ class Map:
         return MapObject('C')
 
     def postprocess_route(self, route):
+        print(self.plane)
         for i in range(1, len(route) - 1):  # from 2nd to 1 before last
             previous_direction = (route[i][1] - route[i - 1][1], route[i][0] - route[i - 1][0])
             future_direction = (route[i + 1][1] - route[i][1], route[i + 1][0] - route[i][0])
@@ -155,7 +156,7 @@ class Map:
             if self.plane[route[i]].detail_type != 'o' and self.check_crossroad(route[i]):
                 self.plane[route[i]] = self.define_crossroad(route[i])
 
-    def create_plane(self, num=1, path_length_range=(10, 20)):
+    def create_plane(self, num, path_length_range=(10, 20)):
         for i in range(num):
             start_point, end_point = None, None
             while start_point == end_point:
