@@ -106,6 +106,7 @@ class Board(GeneralObject):
         count = random.randint(0, len(big_shapes)-1)
         print(f'Big figures count: {count}')
 
+        # ADD OFFSET DETAIL
         for _ in range(count):
             random_big_shape = random.choice(big_shapes_copy)
             big_shapes_copy.remove(random_big_shape)

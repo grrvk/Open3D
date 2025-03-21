@@ -9,6 +9,8 @@ import os
 import time
 import open3d as o3d
 import open3d.visualization as vis
+from matplotlib import pyplot as plt
+
 from generation import Scene
 
 
@@ -52,6 +54,9 @@ class GenerationVisualization:
     def _set_view(self, window):
         view_ctl = window.get_view_control()
         view_ctl.rotate(0.0, 5.8178*90)
+
+        zoom_rate = round(random.uniform(0.6, 0.8), 1)
+        view_ctl.set_zoom(zoom_rate)
 
         render_ctl = window.get_render_option()
         render_ctl.load_from_json('render_option.json')
@@ -128,7 +133,7 @@ class GenerationVisualization:
         # Show the result
         return grayscale_mask
 
-    def postprocess_class_mask(self, matrix, binary_mask, labels2id, imsize=(1920, 1080)):
+    def postprocess_class_mask(self, matrix, binary_mask, labels2id, big_details, imsize=(1920, 1080)):
         y_indices, x_indices = np.where(binary_mask > 0)
 
         y_min, y_max = y_indices.min(), y_indices.max()
@@ -145,10 +150,14 @@ class GenerationVisualization:
 
         grayscale_mask = np.zeros_like(binary_mask)
 
+        test_board = []
+
         annotations = []
         # Draw colored squares on the board
         for i in range(rows):
-            for j in range(cols):
+            j = 0
+            test_row = []
+            while j < cols:
                 if np.any(binary_mask[y_min + i * cell_height: y_min + (i + 1) * cell_height,
                           x_min + j * cell_width: x_min + (j + 1) * cell_width] > 0):
                     if str(matrix[i, j]) == 'o':
@@ -156,27 +165,46 @@ class GenerationVisualization:
                                       (x_min + j * cell_width, y_min + i * cell_height),
                                       (x_min + (j + 1) * cell_width, y_min + (i + 1) * cell_height),
                                       0, -1)
+                        test_row.append(0)
                     else:
-                        # HANDLE BIG OBJECTS
-                        cv2.rectangle(grayscale_mask,
-                                      (x_min + j * cell_width, y_min + i * cell_height),
-                                      (x_min + (j + 1) * cell_width, y_min + (i + 1) * cell_height),
-                                      labels2id.get(str(matrix[i, j])), -1)  # -1 fills the rectangle
+                        if str(matrix[i, j]) in big_details:
+                            x_min_b, y_min_b = None, y_min + (i - 1) * cell_height
+                            x_max_b, y_max_b = x_min + (j + 2) * cell_width, y_min + (i + 1) * cell_height
+                            if str(matrix[i, j]) == 'CL':
+                                x_min_b = x_min + (j - 1) * cell_width
+                                y_min_b = y_min + (i - 2) * cell_height
+                            else:
+                                x_min_b = x_min + (j - 1) * cell_width
+                        else:
+                            x_min_b, y_min_b = x_min + j * cell_width, y_min + i * cell_height
+                            x_max_b, y_max_b = x_min + (j + 1) * cell_width, y_min + (i + 1) * cell_height
+                        cv2.rectangle(grayscale_mask, (x_min_b, y_min_b), (x_max_b, y_max_b),
+                                      labels2id.get(str(matrix[i, j])), -1)
                         annotations.append([str(labels2id.get(str(matrix[i, j]))),
-                                            str((x_min + j * cell_width) / imsize[0]), str((y_min + i * cell_height) / imsize[1]),
-                                            str((x_min + j * cell_width) / imsize[0]), str((y_min + (i + 1) * cell_height) / imsize[1]),
-                                            str((x_min + (j +1) * cell_width) / imsize[0]), str((y_min + i * cell_height) / imsize[1]),
-                                            str((x_min + (j +1) * cell_width) / imsize[0]), str((y_min + (i + 1) * cell_height) / imsize[1])])
+                                            str(x_min_b / imsize[0]), str(y_min_b / imsize[1]),
+                                            str(x_min_b / imsize[0]), str(y_max_b / imsize[1]),
+                                            str(x_max_b / imsize[0]), str(y_min_b / imsize[1]),
+                                            str(x_max_b / imsize[0]), str(y_max_b / imsize[1])])
+                        test_row.append(int(labels2id.get(str(matrix[i, j]))))
+                        if str(matrix[i, j]) in big_details:
+                            test_row.append(int(labels2id.get(str(matrix[i, j]))))
+                            j = j + 1
+                else:
+                    test_row.append(0)
+                j += 1
+            test_board.append(test_row)
 
-        # Show the result
+        print(np.array(test_board))
+
         return grayscale_mask, annotations
 
     def generate_board_mask(self, amount, path_amount_range=(1, 3)):
         scene = Scene()
         labels2id = scene.labels2id
+        big_details = scene.bigShapes
 
         for j in range(amount):
-            empty_cell_rate_value = round(random.uniform(0.5, 0.8), 1)
+            empty_cell_rate_value = round(random.uniform(0.8, 0.9), 1)
             pathnum = random.randint(*path_amount_range)
             scene.generateBoard(num=pathnum, empty_rate=empty_cell_rate_value)
             objects = scene.fillObjects()
@@ -190,7 +218,8 @@ class GenerationVisualization:
             window.capture_screen_image(f'temporary.png', do_render=True)
             mask_filled, result = self.form_mask(index=j, temp_image=f'temporary.png')
             #color_mask = self.postprocess_instance_mask(scene.getBoard().board_matrix, mask_filled)
-            color_mask, annotations = self.postprocess_class_mask(scene.getBoard().board_matrix, mask_filled, labels2id)
+            color_mask, annotations = self.postprocess_class_mask(scene.getBoard().board_matrix,
+                                                                  mask_filled, labels2id, big_details)
 
             cv2.imwrite(f'{self.mask_folder}/{j}.png', color_mask)
             cv2.imwrite(f'{self.image_folder}/{j}.png', result)
