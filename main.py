@@ -1,17 +1,14 @@
-import glob
 import pathlib
 import random
+import tqdm
 
-from PIL import Image
 import numpy as np
 import cv2
 import os
-import time
 import open3d as o3d
 import open3d.visualization as vis
-from matplotlib import pyplot as plt
 
-from generation import Scene
+from scene.generation import Scene
 
 
 def casual_run():
@@ -55,11 +52,11 @@ class GenerationVisualization:
         view_ctl = window.get_view_control()
         view_ctl.rotate(0.0, 5.8178*90)
 
-        zoom_rate = round(random.uniform(0.6, 0.8), 1)
+        zoom_rate = round(random.uniform(0.5, 0.6), 1)
         view_ctl.set_zoom(zoom_rate)
 
         render_ctl = window.get_render_option()
-        render_ctl.load_from_json('render_option.json')
+        render_ctl.load_from_json('configs/render_option.json')
 
         window.update_renderer()
         return window
@@ -180,7 +177,7 @@ class GenerationVisualization:
                             x_max_b, y_max_b = x_min + (j + 1) * cell_width, y_min + (i + 1) * cell_height
                         cv2.rectangle(grayscale_mask, (x_min_b, y_min_b), (x_max_b, y_max_b),
                                       labels2id.get(str(matrix[i, j])), -1)
-                        annotations.append([str(labels2id.get(str(matrix[i, j]))),
+                        annotations.append([str(labels2id.get(str(matrix[i, j]))-1),
                                             str(x_min_b / imsize[0]), str(y_min_b / imsize[1]),
                                             str(x_min_b / imsize[0]), str(y_max_b / imsize[1]),
                                             str(x_max_b / imsize[0]), str(y_min_b / imsize[1]),
@@ -194,19 +191,19 @@ class GenerationVisualization:
                 j += 1
             test_board.append(test_row)
 
-        print(np.array(test_board))
+        # print(np.array(test_board))
 
         return grayscale_mask, annotations
 
-    def generate_board_mask(self, amount, path_amount_range=(1, 3)):
+    def generate_board_mask(self, amount, generate_big_shapes=True, path_amount_range=(1, 3)):
         scene = Scene()
         labels2id = scene.labels2id
         big_details = scene.bigShapes
 
-        for j in range(amount):
-            empty_cell_rate_value = round(random.uniform(0.8, 0.9), 1)
+        for j in tqdm.tqdm(range(amount)):
+            empty_cell_rate_value = round(random.uniform(0.65, 0.9), 1)
             pathnum = random.randint(*path_amount_range)
-            scene.generateBoard(num=pathnum, empty_rate=empty_cell_rate_value)
+            scene.generateBoard(num=pathnum, empty_rate=empty_cell_rate_value, generate_big_shapes=generate_big_shapes)
             objects = scene.fillObjects()
             geoms = scene.getGeoms()
 
@@ -228,8 +225,6 @@ class GenerationVisualization:
                 for line in annotations:
                     txt_file.write(" ".join(line) + "\n")
 
-            time.sleep(1)
-
             for i, g in enumerate(geoms):
                 window.remove_geometry(geometry=g)
 
@@ -240,4 +235,4 @@ class GenerationVisualization:
 
 if __name__ == "__main__":
     generator = GenerationVisualization(asset_folder='/Users/vika/Desktop/wood_texture')
-    generator.generate_board_mask(amount=1)
+    generator.generate_board_mask(amount=1, generate_big_shapes=True)

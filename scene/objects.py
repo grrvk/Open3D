@@ -6,7 +6,7 @@ import numpy as np
 import open3d as o3d
 import open3d.visualization as vis
 
-from map import Map, MapObject
+from .map import Map, MapObject
 
 
 class GeneralObject:
@@ -79,7 +79,7 @@ class Board(GeneralObject):
         self.uniform = None
         self.center = None
 
-    def random_fill(self, config_data, big_shapes, empty_rate):
+    def random_fill(self, config_data, big_shapes, empty_rate, generate_big_shapes):
 
         labels = [MapObject('o')]
         united_big_shapes = copy.deepcopy(big_shapes)
@@ -102,29 +102,30 @@ class Board(GeneralObject):
                     it[0].item().rotation = (0, random_rotation, 0)
             is_not_finished = it.iternext()
 
-        big_shapes_copy = copy.deepcopy(big_shapes)
-        count = random.randint(0, len(big_shapes)-1)
-        print(f'Big figures count: {count}')
+        if generate_big_shapes:
+            big_shapes_copy = copy.deepcopy(big_shapes)
+            count = random.randint(0, len(big_shapes)-1)
+            #print(f'Big figures count: {count}')
 
-        # ADD OFFSET DETAIL
-        for _ in range(count):
-            random_big_shape = random.choice(big_shapes_copy)
-            big_shapes_copy.remove(random_big_shape)
-            if random_big_shape == 'CL':
-                i = np.random.randint(2, self.size[0]-1) # row of 14
-                j = np.random.randint(1, self.size[1]-1) # column of 17
+            # ADD OFFSET DETAIL
+            for _ in range(count):
+                random_big_shape = random.choice(big_shapes_copy)
+                big_shapes_copy.remove(random_big_shape)
+                if random_big_shape == 'CL':
+                    i = np.random.randint(2, self.size[0]-1) # row of 14
+                    j = np.random.randint(1, self.size[1]-1) # column of 17
 
-                self.board_matrix[i][j] = MapObject('CL')
-                self.free_surroundings(i, j, x_shift=1, up_shift=0, down_shift=2)
-            else:
-                i = np.random.randint(1, self.size[0] - 1)  # row of 14
-                j = np.random.randint(1, self.size[1] - 1)  # column of 17
+                    self.board_matrix[i][j] = MapObject('CL')
+                    self.free_surroundings(i, j, x_shift=1, up_shift=0, down_shift=2)
+                else:
+                    i = np.random.randint(1, self.size[0] - 1)  # row of 14
+                    j = np.random.randint(1, self.size[1] - 1)  # column of 17
 
-                self.board_matrix[i][j] = MapObject(random_big_shape)
-                self.free_surroundings(i, j, x_shift=1, up_shift=0, down_shift=1)
+                    self.board_matrix[i][j] = MapObject(random_big_shape)
+                    self.free_surroundings(i, j, x_shift=1, up_shift=0, down_shift=1)
 
-        for row in self.board_matrix:
-            print(" ".join([e.detail_type for e in row]))
+        # for row in self.board_matrix:
+        #     print(" ".join([e.detail_type for e in row]))
 
     def free_surroundings(self, i, j, x_shift, up_shift=0, down_shift=0):
         radius = [j - x_shift, j, j + x_shift]

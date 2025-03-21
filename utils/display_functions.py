@@ -1,11 +1,7 @@
 import random
-
 import cv2
 import os
-import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import matplotlib.colors as mcolors
 
 def display_entry(image_path, mask_path):
     img = cv2.imread(image_path)

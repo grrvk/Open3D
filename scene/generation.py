@@ -5,7 +5,7 @@ import random
 import numpy as np
 from enum import Enum
 
-from objects import SceneObject, Board, GeneralObject
+from .objects import SceneObject, Board, GeneralObject
 
 
 class Color(Enum):
@@ -16,7 +16,7 @@ class Scene:
     def __init__(self):
         self._board = None
         self.geoms = None
-        with open('details_config.json') as f:
+        with open('configs/details_config.json') as f:
             json_data = json.load(f)
             self.general_data_path = json_data['general_path']
             self.config_data = json_data['data']
@@ -27,14 +27,14 @@ class Scene:
         data = [data for data in self.config_data if data['idx'] == idx][0]
 
 
-    def generateBoard(self, empty_rate = 0.7, num=2, size=(14, 17)):
+    def generateBoard(self, empty_rate = 0.7, num=2, size=(14, 17), generate_big_shapes=True):
         config = [data for data in self.config_data if data['name'] == 'Board'][0]
         board = Board(os.path.join(self.general_data_path, config['mesh']), size)
         board.create_mesh()
         board.set_color(np.array(config['color']))
         board.rotate(config['rotate'])
         #board.map_fill(num)
-        board.random_fill(self.config_data, self.bigShapes, empty_rate)
+        board.random_fill(self.config_data, self.bigShapes, empty_rate, generate_big_shapes)
 
         board.get_center()
         board.uniformBlockSize()

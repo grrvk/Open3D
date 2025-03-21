@@ -1,3 +1,4 @@
+import json
 import os
 from os.path import isfile
 import shutil
@@ -13,7 +14,7 @@ class DatasetFormatting:
         self.prev_dataset_images = os.path.join(dataset_path, 'images')
         self.prev_dataset_labels = os.path.join(dataset_path, 'annotations')
 
-        self.general_folder = 'yolo_dataset'
+        self.general_folder = 'yolo_dataset_wout_b'
         self.images = os.path.join(self.general_folder, 'images')
         self.labels = os.path.join(self.general_folder, 'labels')
 
@@ -33,7 +34,7 @@ class DatasetFormatting:
 
         total = sum(class_weights.values())
         normalized_data = {key: value / total for key, value in class_weights.items()}
-        return normalized_data
+        return dict(sorted(normalized_data.items()))
 
 
     def generate_general_structure(self):
@@ -55,9 +56,13 @@ class DatasetFormatting:
         image_files = [f for f in os.listdir(self.prev_dataset_images) if isfile(os.path.join(self.prev_dataset_images, f))]
         label_files = [f for f in os.listdir(self.prev_dataset_labels) if isfile(os.path.join(self.prev_dataset_labels, f))]
 
+        image_files.sort()
+        label_files.sort()
+
         assert len(image_files) == len(label_files), 'Number of images and label files must match'
 
         split_indices = (np.cumsum(self.split) * len(image_files)).astype(int)[:-1]
+        print('Split indices:', split_indices)
         images_split = np.split(image_files, split_indices)
         labels_split = np.split(label_files, split_indices)
 
@@ -79,7 +84,7 @@ class DatasetFormatting:
 
         print('Done creating dataset folder')
 
-    def generate_yaml(self):
+    def generate_yaml(self, config):
         data = {'path': self.general_folder,
                 'train': 'images/train',
                 'val': 'images/val'}
@@ -88,8 +93,11 @@ class DatasetFormatting:
 
         normalized_data = self.get_weights()
         data['nc'] = len(normalized_data)
-        data['names'] = list(normalized_data.keys())
         data['weights'] = list(normalized_data.values())
+        with open('details_config.json') as f:
+            json_data = json.load(f)
+            data['names'] = list(json_data['id2labels'].values())
+            data['names'] = data['names'][:len(data['weights'])]
 
         with open(f'{self.general_folder}.yaml', 'w') as yaml_file:
             yaml.dump(
@@ -104,10 +112,10 @@ class DatasetFormatting:
 
         print('Done generating yaml file')
 
-    def generate(self):
+    def generate(self, config='details_config.json'):
         folder_types = self.generate_general_structure()
         self.generate_folders(folder_types)
-        self.generate_yaml()
+        self.generate_yaml(config)
         print('Done full pipeline')
 
 
