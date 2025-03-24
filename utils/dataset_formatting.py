@@ -14,7 +14,7 @@ class DatasetFormatting:
         self.prev_dataset_images = os.path.join(dataset_path, 'images')
         self.prev_dataset_labels = os.path.join(dataset_path, 'annotations')
 
-        self.general_folder = 'yolo_dataset_wout_b'
+        self.general_folder = 'yolo_dataset_finetune'
         self.images = os.path.join(self.general_folder, 'images')
         self.labels = os.path.join(self.general_folder, 'labels')
 
@@ -94,7 +94,7 @@ class DatasetFormatting:
         normalized_data = self.get_weights()
         data['nc'] = len(normalized_data)
         data['weights'] = list(normalized_data.values())
-        with open('details_config.json') as f:
+        with open('../configs/details_config.json') as f:
             json_data = json.load(f)
             data['names'] = list(json_data['id2labels'].values())
             data['names'] = data['names'][:len(data['weights'])]
@@ -112,7 +112,7 @@ class DatasetFormatting:
 
         print('Done generating yaml file')
 
-    def generate(self, config='details_config.json'):
+    def generate(self, config='../configs/details_config.json'):
         folder_types = self.generate_general_structure()
         self.generate_folders(folder_types)
         self.generate_yaml(config)
@@ -121,7 +121,7 @@ class DatasetFormatting:
 
 
 def main():
-    dataset_formatting = DatasetFormatting(split=[0.8, 0.2], dataset_path='./dataset')
+    dataset_formatting = DatasetFormatting(split=[0.8, 0.2], dataset_path='../dataset')
     dataset_formatting.generate()
 
 if __name__ == '__main__':

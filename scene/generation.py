@@ -27,14 +27,17 @@ class Scene:
         data = [data for data in self.config_data if data['idx'] == idx][0]
 
 
-    def generateBoard(self, empty_rate = 0.7, num=2, size=(14, 17), generate_big_shapes=True):
+    def generateBoard(self, empty_rate = 0.7, num=None, size=(14, 17), generate_big_shapes=True):
         config = [data for data in self.config_data if data['name'] == 'Board'][0]
         board = Board(os.path.join(self.general_data_path, config['mesh']), size)
         board.create_mesh()
         board.set_color(np.array(config['color']))
         board.rotate(config['rotate'])
-        #board.map_fill(num)
-        board.random_fill(self.config_data, self.bigShapes, empty_rate, generate_big_shapes)
+
+        if num is not None:
+            board.map_fill(num)
+        else:
+            board.random_fill(self.config_data, self.bigShapes, empty_rate, generate_big_shapes)
 
         board.get_center()
         board.uniformBlockSize()

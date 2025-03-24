@@ -11,25 +11,26 @@ import open3d.visualization as vis
 from scene.generation import Scene
 
 
-def casual_run():
-    def run(num):
+def casual_run(pathnum):
+    def run(pathnum, empty_rate=0.7, generate_big_shapes=True):
         app = vis.gui.Application.instance
         window = o3d.visualization.O3DVisualizer("ui")
 
         window.setup_camera(field_of_view=10, center=[0, 0, 0], eye=[0, 30, 0], up=[0, 60, 0])
 
         scene = Scene()
-        scene.generateBoard(num)
+
+        scene.generateBoard(num=pathnum, empty_rate=empty_rate, generate_big_shapes=generate_big_shapes)
         objects = scene.fillObjects()
         geoms = scene.getGeoms()
 
-        for i, g in enumerate(geoms[:1]):
+        for i, g in enumerate(geoms):
             window.add_geometry(name=f'mesh_{i}', geometry=g)
 
         window.reset_camera_to_default()
         app.add_window(window)
     vis.gui.Application.instance.initialize()
-    run(num=1)
+    run(pathnum=pathnum)
     vis.gui.Application.instance.run()
 
 class GenerationVisualization:
@@ -234,5 +235,5 @@ class GenerationVisualization:
 
 
 if __name__ == "__main__":
-    generator = GenerationVisualization(asset_folder='/Users/vika/Desktop/wood_texture')
-    generator.generate_board_mask(amount=1, generate_big_shapes=True)
+    generator = GenerationVisualization(asset_folder='wood_texture')
+    generator.generate_board_mask(amount=512, generate_big_shapes=True)

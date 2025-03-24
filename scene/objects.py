@@ -104,7 +104,7 @@ class Board(GeneralObject):
 
         if generate_big_shapes:
             big_shapes_copy = copy.deepcopy(big_shapes)
-            count = random.randint(0, len(big_shapes)-1)
+            count = random.randint(0, len(big_shapes)-2)  # static: -1
             #print(f'Big figures count: {count}')
 
             # ADD OFFSET DETAIL
