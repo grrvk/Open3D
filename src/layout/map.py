@@ -93,6 +93,8 @@ class Map:
         for i, turn in enumerate(right_turns):
             if previous_direction == turn[0] and future_direction == turn[1]:
                 return MapObject('R', (0, right_rotations[i], 0))
+        print('!!!!!!!! TRIED DEFINE TURN BUT UNSUCCESSFULLY')
+        return MapObject('o')
 
     def define_border(self, direction, detail_type):
         border_rotations = [0, -np.pi / 2, np.pi, np.pi / 2]
@@ -130,7 +132,6 @@ class Map:
         return MapObject('C')
 
     def postprocess_route(self, route):
-        print(self.plane)
         for i in range(1, len(route) - 1):  # from 2nd to 1 before last
             previous_direction = (route[i][1] - route[i - 1][1], route[i][0] - route[i - 1][0])
             future_direction = (route[i + 1][1] - route[i][1], route[i + 1][0] - route[i][0])

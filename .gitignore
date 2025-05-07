@@ -1,4 +1,7 @@
 .idea
 
 dataset
-configs
+results
+formatted_results
+src/configs
+src/configs_example

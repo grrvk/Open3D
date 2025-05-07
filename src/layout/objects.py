@@ -1,10 +1,8 @@
 import copy
 import random
 
-import cv2
 import numpy as np
 import open3d as o3d
-import open3d.visualization as vis
 
 from .map import Map, MapObject
 
@@ -79,66 +77,113 @@ class Board(GeneralObject):
         self.uniform = None
         self.center = None
 
-    def random_fill(self, config_data, big_shapes, empty_rate, generate_big_shapes):
+    def place_big_shape(self, detail, x_shift, down_shift, up_shift=0, trial_count=100):
+        for _ in range(trial_count):
+            i = np.random.randint(down_shift, self.size[0] - 1)  # row of 14
+            j = np.random.randint(x_shift, self.size[1] - 1)  # column of 17
 
+            if self.check_surroundings(i, j, x_shift=x_shift, up_shift=up_shift, down_shift=down_shift):
+                self.board_matrix[i][j] = MapObject(detail)
+                self.fill_surroundings(i, j, x_shift=x_shift, up_shift=up_shift, down_shift=down_shift)
+                break
+
+    def random_fill(self, config_data, config_labels, big_shapes, empty_rate, generate_big_shapes):
         labels = [MapObject('o')]
         united_big_shapes = copy.deepcopy(big_shapes)
         united_big_shapes.extend(['B'])
         labels.extend([MapObject(data['idx']) for data in config_data if data['idx'] not in united_big_shapes])
 
         rotations = [0, -np.pi / 2, np.pi, np.pi / 2]
+        big_shapes_rotations = [0, np.pi]
+        # probabilities = [empty_rate]
+        # probabilities.extend([(1-empty_rate)/(len(labels)-1)] * (len(labels)-1))
+        #
 
         probabilities = [empty_rate]
-        probabilities.extend([(1-empty_rate)/(len(labels)-1)] * (len(labels)-1))
+        probabilities.extend([(1 - empty_rate) / (len(labels) - 1)] * (len(labels) - 1))
 
-        self.board_matrix = np.random.choice(labels, size=self.size, p=probabilities)
+        # Adjust probabilities based on label_id frequencies in config_labels
+        label_id_counts = {label_id: list(config_labels.values()).count(label_id) for label_id in
+                           set(config_labels.values())}
 
-        it = np.nditer(self.board_matrix, flags=['multi_index', "refs_ok"])
-        while not it.finished:
-            if it[0].item().detail_type != 'o':
-                chance = random.random()
-                if chance < .5:
-                    random_rotation = random.choice(rotations)
-                    it[0].item().rotation = (0, random_rotation, 0)
-            is_not_finished = it.iternext()
+        for i, label in enumerate(labels):
+            if label.detail_type in config_labels.keys():
+                label_id = config_labels[label.detail_type]
+                count = label_id_counts[label_id]
+                probabilities[i] /= count
 
+        probabilities = np.array(probabilities) / np.sum(probabilities)
+
+        self.board_matrix = np.full(self.size, None)
         if generate_big_shapes:
             big_shapes_copy = copy.deepcopy(big_shapes)
-            count = random.randint(0, len(big_shapes)-2)  # static: -1
+            count = random.randint(5, 20)  # static: len()-1
             #print(f'Big figures count: {count}')
 
             # ADD OFFSET DETAIL
             for _ in range(count):
                 random_big_shape = random.choice(big_shapes_copy)
-                big_shapes_copy.remove(random_big_shape)
                 if random_big_shape == 'CL':
-                    i = np.random.randint(2, self.size[0]-1) # row of 14
-                    j = np.random.randint(1, self.size[1]-1) # column of 17
-
-                    self.board_matrix[i][j] = MapObject('CL')
-                    self.free_surroundings(i, j, x_shift=1, up_shift=0, down_shift=2)
+                    self.place_big_shape(detail = random_big_shape, x_shift=1, down_shift=2)
                 else:
-                    i = np.random.randint(1, self.size[0] - 1)  # row of 14
-                    j = np.random.randint(1, self.size[1] - 1)  # column of 17
+                    self.place_big_shape(detail = random_big_shape, x_shift=1, down_shift=1)
 
-                    self.board_matrix[i][j] = MapObject(random_big_shape)
-                    self.free_surroundings(i, j, x_shift=1, up_shift=0, down_shift=1)
+        #self.board_matrix[self.board_matrix == None] = MapObject('o')
 
         # for row in self.board_matrix:
         #     print(" ".join([e.detail_type for e in row]))
 
-    def free_surroundings(self, i, j, x_shift, up_shift=0, down_shift=0):
+        small_shapes_board_matrix = np.random.choice(labels, size=self.size, p=probabilities)
+        for i in range(self.board_matrix.shape[0]):
+            for j in range(self.board_matrix.shape[1]):
+                if self.board_matrix[i][j] is None and small_shapes_board_matrix[i][j].detail_type != 'o':
+                    self.board_matrix[i][j] = small_shapes_board_matrix[i][j]
+
+        self.board_matrix[self.board_matrix == None] = MapObject('o')
+
+        it = np.nditer(self.board_matrix, flags=['multi_index', "refs_ok"])
+        while not it.finished:
+            obj = it[0].item()
+            if obj.detail_type == 'p':
+                self.board_matrix[it.multi_index] = MapObject('o')
+            elif obj.detail_type != 'o' and obj.detail_type not in big_shapes:
+                chance = random.random()
+                if chance < 0.5:
+                    random_rotation = random.choice(rotations)
+                    obj.rotation = (0, random_rotation, 0)
+            # elif obj.detail_type in big_shapes:
+            #     chance = random.random()
+            #     if chance < 0.5:
+            #         random_rotation = random.choice(big_shapes_rotations)
+            #         obj.rotation = (0, random_rotation, 0)
+            it.iternext()
+
+    def check_surroundings(self, i, j, x_shift, up_shift=0, down_shift=0):
+        radius = [j - x_shift, j, j + x_shift]
+        for pos_x in radius:
+            if up_shift != 0:
+                for k in range(0, up_shift+1):
+                    if self.board_matrix[i+k][pos_x] is not None:
+                        return False
+            if down_shift != 0:
+                for k in range(0, down_shift+1):
+                    if self.board_matrix[i-k][pos_x] is not None:
+                        return False
+        return True
+
+
+    def fill_surroundings(self, i, j, x_shift, up_shift=0, down_shift=0):
         radius = [j - x_shift, j, j + x_shift]
         for pos_x in radius:
             if up_shift != 0:
                 for k in range(1, up_shift+1):
-                    self.board_matrix[i+k][pos_x] = MapObject('o')
+                    self.board_matrix[i+k][pos_x] = MapObject('p')
             if down_shift != 0:
                 for k in range(1, down_shift+1):
-                    self.board_matrix[i-k][pos_x] = MapObject('o')
+                    self.board_matrix[i-k][pos_x] = MapObject('p')
 
-        self.board_matrix[i][j - x_shift] = MapObject('o')
-        self.board_matrix[i][j + x_shift] = MapObject('o')
+        self.board_matrix[i][j - x_shift] = MapObject('p')
+        self.board_matrix[i][j + x_shift] = MapObject('p')
 
     def map_fill(self, num):
         map = Map()

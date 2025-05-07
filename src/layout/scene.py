@@ -1,11 +1,12 @@
 import json
 import os.path
+import pathlib
 import random
 
 import numpy as np
 from enum import Enum
 
-from .objects import SceneObject, Board, GeneralObject
+from src.layout.objects import SceneObject, Board
 
 
 class Color(Enum):
@@ -16,7 +17,10 @@ class Scene:
     def __init__(self):
         self._board = None
         self.geoms = None
-        with open('configs/details_config.json') as f:
+        self.detail_config = 'configs/details_config.json'
+        base_dir = pathlib.Path(__file__).resolve().parent.parent
+        config = os.path.join(base_dir, self.detail_config)
+        with open(config) as f:
             json_data = json.load(f)
             self.general_data_path = json_data['general_path']
             self.config_data = json_data['data']
@@ -37,7 +41,7 @@ class Scene:
         if num is not None:
             board.map_fill(num)
         else:
-            board.random_fill(self.config_data, self.bigShapes, empty_rate, generate_big_shapes)
+            board.random_fill(self.config_data, self.labels2id, self.bigShapes, empty_rate, generate_big_shapes)
 
         board.get_center()
         board.uniformBlockSize()
