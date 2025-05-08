@@ -4,15 +4,15 @@ import pathlib
 from pathlib import Path
 import albumentations as A
 
-from src.formatting.yolo import YOLODatasetFormatter
-from src.generation.augmentation import Augmentations
-from src.generation.structure import BoardDatasetGenerator
+from gen_src.formatting.yolo import YOLODatasetFormatter
+from gen_src.generation.augmentation import Augmentations
+from gen_src.generation.structure import BoardDatasetGenerator
 
 
 def main():
     base_path = pathlib.Path(__file__).resolve().parent.parent
 
-    generator = BoardDatasetGenerator(asset_folder='/Users/vika/Desktop/texture')
+    generator = BoardDatasetGenerator(asset_folder='texture')
     generator.generate(amount=4, cropped=False)
 
     generator_path = f"{Path(generator.general_folder).parent.name}/{Path(generator.general_folder).name}"

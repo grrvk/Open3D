@@ -1,7 +1,7 @@
 import open3d as o3d
 import open3d.visualization as vis
 
-from src.layout.scene import Scene
+from gen_src.layout.scene import Scene
 
 def o3d_preview(path_num=None, empty_rate=0.5, generate_big_shapes=True):
     def run():

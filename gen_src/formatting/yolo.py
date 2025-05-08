@@ -7,7 +7,7 @@ import tqdm
 import yaml
 
 import numpy as np
-from src.formatting.base import BaseDatasetFormatter
+from gen_src.formatting.base import BaseDatasetFormatter
 
 class YOLODatasetFormatter(BaseDatasetFormatter):
     def __init__(self, split: list, prev_dataset_path: str, config_path: str):

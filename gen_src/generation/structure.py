@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 import open3d as o3d
 
-from src.layout.scene import Scene
+from gen_src.layout.scene import Scene
 
 
 class DatasetGenerator:
@@ -364,5 +364,5 @@ class BoardDatasetGenerator(DatasetGenerator):
 
 
 if __name__ == "__main__":
-    generator = BoardDatasetGenerator(asset_folder='/Users/vika/Desktop/texture')
+    generator = BoardDatasetGenerator(asset_folder='texture')
     generator.generate(amount=4, path_amount_range=(1, 3), generate_big_shapes=False)

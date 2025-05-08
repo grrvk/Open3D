@@ -6,7 +6,7 @@ import random
 import numpy as np
 from enum import Enum
 
-from src.layout.objects import SceneObject, Board
+from gen_src.layout.objects import SceneObject, Board
 
 
 class Color(Enum):
