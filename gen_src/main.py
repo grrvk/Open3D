@@ -12,7 +12,7 @@ from src.generation.structure import BoardDatasetGenerator
 def main():
     base_path = pathlib.Path(__file__).resolve().parent.parent
 
-    generator = BoardDatasetGenerator(asset_folder='texture')
+    generator = BoardDatasetGenerator(asset_folder='/Users/vika/Desktop/texture')
     generator.generate(amount=4, cropped=False)
 
     generator_path = f"{Path(generator.general_folder).parent.name}/{Path(generator.general_folder).name}"

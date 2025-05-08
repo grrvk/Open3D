@@ -3,5 +3,10 @@
 dataset
 results
 formatted_results
-src/configs
-src/configs_example
+
+gen_src/configs
+gen_src/configs_example
+
+pipeline_results
+pipeline/func/models
+pipeline/func/configs

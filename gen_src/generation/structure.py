@@ -364,5 +364,5 @@ class BoardDatasetGenerator(DatasetGenerator):
 
 
 if __name__ == "__main__":
-    generator = BoardDatasetGenerator(asset_folder='texture')
+    generator = BoardDatasetGenerator(asset_folder='/Users/vika/Desktop/texture')
     generator.generate(amount=4, path_amount_range=(1, 3), generate_big_shapes=False)
