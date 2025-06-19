@@ -139,7 +139,7 @@ class DetailFilter:
             plt.figure(figsize=(10, 6))
             plt.imshow(rgb_image)
             plt.axis("off")
-            plt.title("Details detected")
+            plt.title("Details filtered")
             plt.show()
 
         return image
